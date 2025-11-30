@@ -65,6 +65,38 @@ const Blogs = () => {
         blog.content?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleReadBlog = async (blog: any) => {
+        // In a real app, you'd track reading time. Here we credit on click for demo.
+        if (profile?.id) {
+            try {
+                const rewardAmount = 20; // Fixed reward for reading
+
+                const { data: currentProfile } = await supabase
+                    .from("profiles")
+                    .select("total_kes")
+                    .eq("id", profile.id)
+                    .single();
+
+                const newBalance = (currentProfile?.total_kes || 0) + rewardAmount;
+
+                await supabase.from("profiles").update({
+                    total_kes: newBalance
+                }).eq("id", profile.id);
+
+                toast({
+                    title: "Article Opened 📖",
+                    description: `You earned ${rewardAmount} KES for reading this article!`,
+                });
+
+                // Increment view count (optional)
+                // await supabase.from("blogs").update({ views: (blog.views || 0) + 1 }).eq("id", blog.id);
+
+            } catch (error) {
+                console.error("Error crediting blog read:", error);
+            }
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
@@ -160,7 +192,7 @@ const Blogs = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <Button className="w-full" variant="outline">
+                                    <Button className="w-full" variant="outline" onClick={() => handleReadBlog(blog)}>
                                         <BookOpen className="mr-2 h-4 w-4" />
                                         Read More
                                     </Button>

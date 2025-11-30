@@ -20,37 +20,80 @@ const MathQuiz = () => {
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [showResult, setShowResult] = useState(false);
     const [timeLeft, setTimeLeft] = useState(30);
+    const [answers, setAnswers] = useState<{ questionId: number; answer: number }[]>([]);
 
     const questions = [
         {
-            question: "What is 15 + 27?",
-            options: [42, 32, 52, 45],
+            question: "Find the derivative of f(x) = 3x²",
+            options: ["6x", "3x", "6x²", "3x²"],
             correct: 0,
-            points: 10
+            points: 15
         },
         {
-            question: "What is 144 ÷ 12?",
-            options: [11, 12, 13, 14],
-            correct: 1,
-            points: 10
-        },
-        {
-            question: "What is 8 × 9?",
-            options: [63, 72, 81, 64],
-            correct: 1,
-            points: 10
-        },
-        {
-            question: "What is 100 - 37?",
-            options: [63, 73, 67, 57],
-            correct: 0,
-            points: 10
-        },
-        {
-            question: "What is 25% of 200?",
-            options: [25, 50, 75, 100],
+            question: "What is d/dx(x³)?",
+            options: ["x²", "3x²", "3x³", "x³/3"],
             correct: 1,
             points: 15
+        },
+        {
+            question: "Find the derivative of f(x) = 5x⁴ + 2x²",
+            options: ["20x³ + 4x", "5x³ + 2x", "20x⁴ + 4x²", "5x⁵ + 2x³"],
+            correct: 0,
+            points: 20
+        },
+        {
+            question: "What is the limit: lim(x→0) (sin x)/x ?",
+            options: ["0", "1", "∞", "undefined"],
+            correct: 1,
+            points: 20
+        },
+        {
+            question: "Find d/dx(eˣ)",
+            options: ["eˣ", "xeˣ⁻¹", "eˣ⁻¹", "ln(x)"],
+            correct: 0,
+            points: 20
+        },
+        {
+            question: "What is the derivative of f(x) = ln(x)?",
+            options: ["x", "1/x", "ln(x)/x", "eˣ"],
+            correct: 1,
+            points: 20
+        },
+        {
+            question: "Find the integral: ∫ 2x dx",
+            options: ["x²", "x² + C", "2x²", "2x² + C"],
+            correct: 1,
+            points: 25
+        },
+        {
+            question: "What is d/dx(sin x)?",
+            options: ["cos x", "-cos x", "sin x", "-sin x"],
+            correct: 0,
+            points: 20
+        },
+        {
+            question: "Find the derivative of f(x) = x² · eˣ using the product rule",
+            options: ["2x · eˣ", "x² · eˣ + 2x · eˣ", "x² · eˣ", "2x · eˣ + x²"],
+            correct: 1,
+            points: 25
+        },
+        {
+            question: "What is the second derivative of f(x) = x³?",
+            options: ["3x²", "6x", "x²", "3x"],
+            correct: 1,
+            points: 25
+        },
+        {
+            question: "Find the derivative of f(x) = (3x + 2)⁴ using the chain rule",
+            options: ["12(3x + 2)³", "4(3x + 2)³", "3(3x + 2)³", "12(3x + 2)⁴"],
+            correct: 0,
+            points: 30
+        },
+        {
+            question: "Evaluate: ∫₀² x dx",
+            options: ["1", "2", "3", "4"],
+            correct: 1,
+            points: 25
         }
     ];
 
@@ -99,14 +142,19 @@ const MathQuiz = () => {
         setTimeLeft(30);
     };
 
-    const handleAnswer = (answerIndex: number) => {
+    const handleAnswer = async (answerIndex: number) => {
         setSelectedAnswer(answerIndex);
 
+        // Record answer
+        setAnswers(prev => [...prev, { questionId: currentQuestion, answer: answerIndex }]);
+
         if (answerIndex === questions[currentQuestion].correct) {
-            setScore(score + questions[currentQuestion].points);
+            const pointsEarned = questions[currentQuestion].points;
+            setScore(score + pointsEarned);
+
             toast({
                 title: "Correct! ✅",
-                description: `+${questions[currentQuestion].points} points`,
+                description: `+${pointsEarned} points`,
             });
         } else {
             toast({
@@ -121,12 +169,44 @@ const MathQuiz = () => {
         }, 1500);
     };
 
-    const handleNextQuestion = () => {
+    const handleNextQuestion = async () => {
         setSelectedAnswer(null);
         if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
             setTimeLeft(30);
         } else {
+            // Submit quiz to backend
+            try {
+                const response = await fetch('/api/games/quiz/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: profile?.id,
+                        answers: answers.map(a => ({ questionId: a.questionId, answer: questions[a.questionId].options[a.answer] }))
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    toast({
+                        title: "Quiz Submitted!",
+                        description: data.message,
+                    });
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error: any) {
+                console.error('Quiz submit error:', error);
+                toast({
+                    title: "Submission failed",
+                    description: error.message,
+                    variant: "destructive",
+                });
+            }
+
             setShowResult(true);
             setQuizStarted(false);
         }
@@ -151,8 +231,8 @@ const MathQuiz = () => {
             </div>
 
             <PageHeader
-                title="Math Quiz Challenge"
-                subtitle="Test your math skills and earn rewards"
+                title="Calculus & Differentiation Quiz"
+                subtitle="Master calculus concepts and earn rewards"
                 profileName={profile?.full_name}
                 profileImage={profile?.avatar_url}
             />
@@ -164,9 +244,9 @@ const MathQuiz = () => {
                             <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center">
                                 <Calculator className="h-10 w-10 text-primary" />
                             </div>
-                            <CardTitle className="text-3xl">Ready to Challenge Yourself?</CardTitle>
+                            <CardTitle className="text-3xl">Ready for Calculus Challenge?</CardTitle>
                             <CardDescription className="text-lg">
-                                Answer {questions.length} questions and earn points!
+                                Answer {questions.length} calculus questions and earn points!
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

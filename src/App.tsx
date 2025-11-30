@@ -8,8 +8,12 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import Blogs from "./pages/Blogs";
+import Mpesa from "./pages/Mpesa";
+import Bank from "./pages/Bank";
+import Deposit from "./pages/Deposit";
+import Withdrawals from "./pages/Withdrawals";
 import Videos from "./pages/Videos";
+import Blogs from "./pages/Blogs";
 import ForexClasses from "./pages/ForexClasses";
 import MathQuiz from "./pages/MathQuiz";
 import FreeSpin from "./pages/FreeSpin";
@@ -35,6 +39,10 @@ const App = () => (
           <Route path="/videos" element={<Videos />} />
           <Route path="/forex" element={<ForexClasses />} />
           <Route path="/quiz" element={<MathQuiz />} />
+          <Route path="/mpesa" element={<Mpesa />} />
+          <Route path="/bank" element={<Bank />} />
+          <Route path="/deposit" element={<Deposit />} />
+          <Route path="/withdraw" element={<Withdrawals />} />
           <Route path="/spin" element={<FreeSpin />} />
           <Route path="/ads" element={<WhatsAppAds />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

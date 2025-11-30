@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/PageHeader";
-import { Video, Search, Play, Clock, Eye, Star, TrendingUp, Film } from "lucide-react";
+import { Video, Search, Play, Clock, Eye, Star, TrendingUp, Film, Bookmark, BookmarkCheck, MessageSquare } from "lucide-react";
 
 const Videos = () => {
     const navigate = useNavigate();
@@ -18,6 +18,8 @@ const Videos = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
+    const [bookmarkedVideos, setBookmarkedVideos] = useState<Set<string>>(new Set());
+    const [userRatings, setUserRatings] = useState<Map<string, number>>(new Map());
 
     useEffect(() => {
         const initPage = async () => {
@@ -37,13 +39,14 @@ const Videos = () => {
 
                 setProfile(profileData);
 
-                const { data: videosData } = await supabase
-                    .from("videos")
-                    .select("*")
-                    .eq("published", true)
-                    .order("created_at", { ascending: false });
+                // Load videos from local storage
+                const storedVideos = localStorage.getItem('spincash_videos');
+                const videosData = storedVideos ? JSON.parse(storedVideos) : [];
+                console.log('Loaded videos:', videosData);
+                setVideos(videosData);
 
-                setVideos(videosData || []);
+                // Load user bookmarks and ratings
+                await loadUserData();
 
             } catch (error: any) {
                 console.error("Error loading videos:", error);
@@ -68,6 +71,70 @@ const Videos = () => {
     });
 
     const categories = ["all", "tutorial", "training", "webinar", "demo"];
+
+    const handleWatchVideo = (video: any) => {
+        // Update view count locally
+        const updatedVideos = videos.map(v =>
+            v.id === video.id ? { ...v, views: (v.views || 0) + 1 } : v
+        );
+        setVideos(updatedVideos);
+        localStorage.setItem('spincash_videos', JSON.stringify(updatedVideos));
+
+        toast({
+            title: "Video Started 🎥",
+            description: "Enjoy learning!",
+        });
+    };
+
+    const handleBookmark = (video: any) => {
+        const newBookmarkedVideos = new Set(bookmarkedVideos);
+        const isBookmarked = bookmarkedVideos.has(video.id);
+
+        if (isBookmarked) {
+            newBookmarkedVideos.delete(video.id);
+        } else {
+            newBookmarkedVideos.add(video.id);
+        }
+
+        setBookmarkedVideos(newBookmarkedVideos);
+        localStorage.setItem('spincash_bookmarks', JSON.stringify(Array.from(newBookmarkedVideos)));
+
+        toast({
+            title: isBookmarked ? "Removed from bookmarks" : "Bookmarked! 📚",
+            description: isBookmarked ? "Video removed from bookmarks" : "Video saved to your bookmarks",
+        });
+    };
+
+    const handleRateVideo = (video: any, rating: number) => {
+        setUserRatings(new Map(userRatings.set(video.id, rating)));
+        localStorage.setItem('spincash_ratings', JSON.stringify(Object.fromEntries(userRatings.set(video.id, rating))));
+
+        toast({
+            title: "Rating Submitted! ⭐",
+            description: `You rated this video ${rating} star${rating !== 1 ? 's' : ''}`,
+        });
+    };
+
+    const loadUserData = () => {
+        try {
+            // Load bookmarks from localStorage
+            const storedBookmarks = localStorage.getItem('spincash_bookmarks');
+            if (storedBookmarks) {
+                const bookmarkIds = JSON.parse(storedBookmarks);
+                setBookmarkedVideos(new Set(bookmarkIds));
+            }
+
+            // Load ratings from localStorage
+            const storedRatings = localStorage.getItem('spincash_ratings');
+            if (storedRatings) {
+                const ratingsObj = JSON.parse(storedRatings);
+                const ratingsMap = new Map(Object.entries(ratingsObj).map(([k, v]) => [k, v as number]));
+                setUserRatings(ratingsMap);
+            }
+        } catch (error) {
+            console.error("Error loading user data:", error);
+        }
+    };
 
     if (loading) {
         return (
@@ -171,12 +238,93 @@ const Videos = () => {
                                     </div>
                                 </div>
                                 <CardHeader>
-                                    <CardTitle className="line-clamp-2">{video.title}</CardTitle>
-                                    <CardDescription className="line-clamp-2">
-                                        {video.description}
-                                    </CardDescription>
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <CardTitle className="line-clamp-2">{video.title}</CardTitle>
+                                            <CardDescription className="line-clamp-2 mt-1">
+                                                {video.description}
+                                            </CardDescription>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleBookmark(video)}
+                                            className="ml-2 p-1 h-8 w-8"
+                                        >
+                                            {bookmarkedVideos.has(video.id) ? (
+                                                <BookmarkCheck className="h-4 w-4 text-accent" />
+                                            ) : (
+                                                <Bookmark className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+
+                                    {/* Tags and Badges */}
+                                    <div className="flex items-center gap-2 mt-2">
+                                        {video.featured && (
+                                            <Badge variant="default" className="bg-accent text-xs">
+                                                <Star className="h-3 w-3 mr-1" />
+                                                Featured
+                                            </Badge>
+                                        )}
+                                        {video.difficulty && (
+                                            <Badge variant="outline" className="text-xs">
+                                                {video.difficulty}
+                                            </Badge>
+                                        )}
+                                        {video.category && (
+                                            <Badge variant="secondary" className="text-xs">
+                                                {video.category}
+                                            </Badge>
+                                        )}
+                                    </div>
+
+                                    {/* Tags */}
+                                    {video.tags && video.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {video.tags.slice(0, 2).map((tag: string, index: number) => (
+                                                <Badge key={index} variant="outline" className="text-xs">
+                                                    {tag}
+                                                </Badge>
+                                            ))}
+                                            {video.tags.length > 2 && (
+                                                <Badge variant="outline" className="text-xs">
+                                                    +{video.tags.length - 2}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
                                 </CardHeader>
                                 <CardContent>
+                                    {/* Rating Section */}
+                                    {profile && (
+                                        <div className="mb-3">
+                                            <div className="flex items-center gap-1 mb-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        onClick={() => handleRateVideo(video, star)}
+                                                        className="text-lg hover:scale-110 transition-transform"
+                                                    >
+                                                        <Star
+                                                            className={`h-4 w-4 ${
+                                                                (userRatings.get(video.id) || 0) >= star
+                                                                    ? 'text-yellow-400 fill-yellow-400'
+                                                                    : 'text-gray-400'
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                ))}
+                                                {video.avg_rating > 0 && (
+                                                    <span className="text-xs text-muted-foreground ml-2">
+                                                        {video.avg_rating.toFixed(1)} ({video.total_ratings})
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Stats */}
                                     <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                                         <div className="flex items-center gap-1">
                                             <Clock className="h-4 w-4" />
@@ -187,10 +335,32 @@ const Videos = () => {
                                             <span>{video.views || 0} views</span>
                                         </div>
                                     </div>
-                                    <Button className="w-full">
-                                        <Play className="mr-2 h-4 w-4" />
-                                        Watch Now
-                                    </Button>
+
+                                    {/* Prerequisites */}
+                                    {video.prerequisites && video.prerequisites.length > 0 && (
+                                        <div className="mb-3">
+                                            <p className="text-xs text-muted-foreground mb-1">Prerequisites:</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {video.prerequisites.map((prereq: string, index: number) => (
+                                                    <Badge key={index} variant="outline" className="text-xs">
+                                                        {prereq}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        <Button className="flex-1" onClick={() => handleWatchVideo(video)}>
+                                            <Play className="mr-2 h-4 w-4" />
+                                            Watch Now
+                                        </Button>
+                                        {video.transcript && (
+                                            <Button variant="outline" size="sm">
+                                                <MessageSquare className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         ))

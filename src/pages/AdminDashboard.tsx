@@ -37,6 +37,7 @@ const AdminDashboard = () => {
     const { toast } = useToast();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState("users");
     const [stats, setStats] = useState({
         totalUsers: 0,
         activeUsers: 0,
@@ -204,7 +205,10 @@ const AdminDashboard = () => {
             <div className="container mx-auto px-4 py-8">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <Card className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform">
+                    <Card
+                        className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => setActiveTab("users")}
+                    >
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-white">Total Users</CardTitle>
                             <Users className="h-5 w-5 text-blue-400" />
@@ -217,7 +221,10 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform">
+                    <Card
+                        className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => setActiveTab("analytics")}
+                    >
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-white">Active Users</CardTitle>
                             <UserCheck className="h-5 w-5 text-green-400" />
@@ -228,7 +235,10 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform">
+                    <Card
+                        className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => setActiveTab("analytics")}
+                    >
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-white">Total Earnings</CardTitle>
                             <TrendingUp className="h-5 w-5 text-purple-400" />
@@ -239,7 +249,10 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform">
+                    <Card
+                        className="backdrop-blur-md bg-white/10 border-white/20 shadow-glass hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => setActiveTab("withdrawals")}
+                    >
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-white">Pending Withdrawals</CardTitle>
                             <Wallet className="h-5 w-5 text-yellow-400" />
@@ -253,7 +266,10 @@ const AdminDashboard = () => {
 
                 {/* Additional Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <Card className="backdrop-blur-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-white/20">
+                    <Card
+                        className="backdrop-blur-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-white/20 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setActiveTab("videos")}
+                    >
                         <CardContent className="flex items-center justify-between p-4">
                             <div>
                                 <p className="text-sm text-gray-300">Total Videos</p>
@@ -263,7 +279,10 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-md bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-white/20">
+                    <Card
+                        className="backdrop-blur-md bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-white/20 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setActiveTab("blogs")}
+                    >
                         <CardContent className="flex items-center justify-between p-4">
                             <div>
                                 <p className="text-sm text-gray-300">Total Blogs</p>
@@ -273,7 +292,10 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-md bg-gradient-to-br from-green-500/20 to-teal-500/20 border-white/20">
+                    <Card
+                        className="backdrop-blur-md bg-gradient-to-br from-green-500/20 to-teal-500/20 border-white/20 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setActiveTab("games")}
+                    >
                         <CardContent className="flex items-center justify-between p-4">
                             <div>
                                 <p className="text-sm text-gray-300">Total Spins</p>
@@ -283,7 +305,10 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-md bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-white/20">
+                    <Card
+                        className="backdrop-blur-md bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-white/20 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setActiveTab("analytics")}
+                    >
                         <CardContent className="flex items-center justify-between p-4">
                             <div>
                                 <p className="text-sm text-gray-300">Activity</p>
@@ -294,8 +319,68 @@ const AdminDashboard = () => {
                     </Card>
                 </div>
 
+                {/* Quick Actions Section */}
+                <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-white mb-4">Quick Actions</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <Button
+                            onClick={() => setActiveTab("notifications")}
+                            className="h-20 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 hover:from-blue-500/30 hover:to-purple-500/30 border border-white/20 backdrop-blur-md"
+                        >
+                            <Bell className="h-6 w-6 text-blue-400" />
+                            <span className="text-sm text-white">Send Notification</span>
+                        </Button>
+
+                        <Button
+                            onClick={() => setActiveTab("blogs")}
+                            className="h-20 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-white/20 backdrop-blur-md"
+                        >
+                            <BookOpen className="h-6 w-6 text-purple-400" />
+                            <span className="text-sm text-white">Add Blog</span>
+                        </Button>
+
+                        <Button
+                            onClick={() => setActiveTab("videos")}
+                            className="h-20 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-green-500/20 to-teal-500/20 hover:from-green-500/30 hover:to-teal-500/30 border border-white/20 backdrop-blur-md"
+                        >
+                            <Video className="h-6 w-6 text-green-400" />
+                            <span className="text-sm text-white">Add Video</span>
+                        </Button>
+
+                        <Button
+                            onClick={() => setActiveTab("games")}
+                            className="h-20 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 border border-white/20 backdrop-blur-md"
+                        >
+                            <Dices className="h-6 w-6 text-yellow-400" />
+                            <span className="text-sm text-white">Manage Games</span>
+                        </Button>
+
+                        <Button
+                            onClick={() => setActiveTab("withdrawals")}
+                            className="h-20 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-red-500/20 to-pink-500/20 hover:from-red-500/30 hover:to-pink-500/30 border border-white/20 backdrop-blur-md"
+                        >
+                            <Wallet className="h-6 w-6 text-red-400" />
+                            <span className="text-sm text-white">Withdrawals</span>
+                        </Button>
+
+                        <Button
+                            onClick={() => {
+                                toast({
+                                    title: "Export Data",
+                                    description: "Data export feature coming soon!",
+                                    variant: "default",
+                                });
+                            }}
+                            className="h-20 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-white/20 backdrop-blur-md"
+                        >
+                            <BarChart3 className="h-6 w-6 text-cyan-400" />
+                            <span className="text-sm text-white">Export Data</span>
+                        </Button>
+                    </div>
+                </div>
+
                 {/* Main Admin Tabs */}
-                <Tabs defaultValue="users" className="space-y-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="backdrop-blur-md bg-white/10 border border-white/20 p-1 grid grid-cols-3 md:grid-cols-7 gap-1">
                         <TabsTrigger value="users" className="data-[state=active]:bg-blue-500/30 text-white">
                             <Users className="h-4 w-4 mr-2" />

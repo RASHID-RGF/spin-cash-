@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { supabase } from '../config/database';
 import mpesaService from '../services/mpesa.service';
 
 const router = Router();
@@ -122,10 +123,7 @@ router.post('/callback', async (req: Request, res: Response) => {
         const { Body } = req.body;
 
         if (Body && Body.stkCallback) {
-            const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc } = Body.stkCallback;
-
-            // TODO: Update transaction status in database
-            // TODO: Credit user wallet if successful (ResultCode === 0)
+            const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
 
             console.log('Transaction Result:', {
                 MerchantRequestID,
@@ -133,6 +131,94 @@ router.post('/callback', async (req: Request, res: Response) => {
                 ResultCode,
                 ResultDesc
             });
+
+            // Extract transaction details from metadata
+            let transactionAmount = 0;
+            let mpesaReceiptNumber = '';
+            let transactionDate = '';
+            let phoneNumber = '';
+
+            if (CallbackMetadata && CallbackMetadata.Item) {
+                CallbackMetadata.Item.forEach((item: any) => {
+                    switch (item.Name) {
+                        case 'Amount':
+                            transactionAmount = item.Value;
+                            break;
+                        case 'MpesaReceiptNumber':
+                            mpesaReceiptNumber = item.Value;
+                            break;
+                        case 'TransactionDate':
+                            transactionDate = item.Value;
+                            break;
+                        case 'PhoneNumber':
+                            phoneNumber = item.Value;
+                            break;
+                    }
+                });
+            }
+
+            if (ResultCode === 0) {
+                // Transaction successful - extract user ID from account reference
+                // The account reference was set as `DEPOSIT_${userId}_${Date.now()}`
+                const accountReference = Body.stkCallback.AccountReference || '';
+                const userIdMatch = accountReference.match(/DEPOSIT_([^_]+)_/);
+
+                if (userIdMatch) {
+                    const userId = userIdMatch[1];
+
+                    // Credit user wallet
+                    const { data: wallet, error: walletError } = await supabase
+                        .from('wallets')
+                        .select('balance, total_earnings')
+                        .eq('user_id', userId)
+                        .single();
+
+                    if (!walletError && wallet) {
+                        const { error: updateError } = await supabase
+                            .from('wallets')
+                            .update({
+                                balance: (wallet.balance || 0) + transactionAmount,
+                                total_earnings: (wallet.total_earnings || 0) + transactionAmount
+                            })
+                            .eq('user_id', userId);
+
+                        if (updateError) {
+                            console.error('Wallet update failed:', updateError);
+                        } else {
+                            // Record transaction
+                            await supabase
+                                .from('transactions')
+                                .insert({
+                                    user_id: userId,
+                                    type: 'deposit',
+                                    amount: transactionAmount,
+                                    description: `MPESA Deposit - ${mpesaReceiptNumber}`,
+                                    status: 'completed',
+                                    metadata: {
+                                        mpesa_receipt: mpesaReceiptNumber,
+                                        transaction_date: transactionDate,
+                                        phone_number: phoneNumber
+                                    }
+                                });
+
+                            // Award referral commission if applicable
+                            // This would be handled by the referral system when deposits are made
+                        }
+                    }
+                }
+            }
+
+            // Store callback data for debugging/reference
+            await supabase
+                .from('mpesa_callbacks')
+                .insert({
+                    merchant_request_id: MerchantRequestID,
+                    checkout_request_id: CheckoutRequestID,
+                    result_code: ResultCode,
+                    result_desc: ResultDesc,
+                    callback_data: req.body,
+                    processed: true
+                });
         }
 
         // Always respond with 200 to acknowledge receipt

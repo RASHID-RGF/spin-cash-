@@ -15,14 +15,18 @@ const FreeSpin = () => {
     const [spinning, setSpinning] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [spinsLeft, setSpinsLeft] = useState(3);
+    const [totalWins, setTotalWins] = useState(0);
+    const [totalKES, setTotalKES] = useState(0);
 
+    // Weighted prizes: jackpot has low probability
     const prizes = [
-        { id: 1, name: "10 KES", value: 10, color: "bg-green-500" },
-        { id: 2, name: "50 KES", value: 50, color: "bg-blue-500" },
-        { id: 3, name: "100 KES", value: 100, color: "bg-purple-500" },
-        { id: 4, name: "5 Spin Points", value: 5, color: "bg-yellow-500" },
-        { id: 5, name: "Better Luck", value: 0, color: "bg-gray-500" },
-        { id: 6, name: "20 KES", value: 20, color: "bg-pink-500" },
+        { id: 1, name: "10 KES", value: 10, color: "bg-green-500", weight: 30 },
+        { id: 2, name: "50 KES", value: 50, color: "bg-blue-500", weight: 20 },
+        { id: 3, name: "100 KES", value: 100, color: "bg-purple-500", weight: 15 },
+        { id: 4, name: "5 Spin Points", value: 5, color: "bg-yellow-500", weight: 10 },
+        { id: 5, name: "Better Luck", value: 0, color: "bg-gray-500", weight: 15 },
+        { id: 6, name: "20 KES", value: 20, color: "bg-pink-500", weight: 5 },
+        { id: 7, name: "Jackpot 500 KES", value: 500, color: "bg-red-600", weight: 1 },
     ];
 
     useEffect(() => {
@@ -53,7 +57,7 @@ const FreeSpin = () => {
         initPage();
     }, [navigate]);
 
-    const handleSpin = () => {
+    const handleSpin = async () => {
         if (spinsLeft <= 0) {
             toast({
                 title: "No spins left",
@@ -66,24 +70,55 @@ const FreeSpin = () => {
         setSpinning(true);
         setResult(null);
 
-        setTimeout(() => {
-            const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
-            setResult(randomPrize);
-            setSpinning(false);
-            setSpinsLeft(spinsLeft - 1);
+        try {
+            // Call backend API
+            const response = await fetch('/api/games/spin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: profile?.id,
+                    spinType: 'free'
+                }),
+            });
 
-            if (randomPrize.value > 0) {
-                toast({
-                    title: "Congratulations! 🎉",
-                    description: `You won ${randomPrize.name}!`,
-                });
-            } else {
-                toast({
-                    title: "Better luck next time!",
-                    description: "Try again with your remaining spins",
-                });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to spin');
             }
-        }, 3000);
+
+            // Simulate spinning animation
+            setTimeout(() => {
+                setResult({ name: `${data.reward} Points`, value: data.reward });
+                setSpinning(false);
+                setSpinsLeft(spinsLeft - 1);
+
+                if (data.reward > 0) {
+                    setTotalWins(prev => prev + 1);
+                    setTotalKES(prev => prev + data.reward);
+
+                    toast({
+                        title: "Congratulations! 🎉",
+                        description: data.message,
+                    });
+                } else {
+                    toast({
+                        title: "Better luck next time!",
+                        description: "Try again with your remaining spins",
+                    });
+                }
+            }, 3000);
+        } catch (error: any) {
+            console.error('Spin error:', error);
+            setSpinning(false);
+            toast({
+                title: "Spin failed",
+                description: error.message,
+                variant: "destructive",
+            });
+        }
     };
 
     if (loading) {
@@ -123,14 +158,14 @@ const FreeSpin = () => {
                     <Card className="backdrop-blur-md bg-card/50 border-border/50">
                         <CardContent className="pt-6 text-center">
                             <Trophy className="h-8 w-8 text-accent mx-auto mb-2" />
-                            <div className="text-2xl font-bold">12</div>
+                            <div className="text-2xl font-bold">{totalWins}</div>
                             <div className="text-xs text-muted-foreground">Total Wins</div>
                         </CardContent>
                     </Card>
                     <Card className="backdrop-blur-md bg-card/50 border-border/50">
                         <CardContent className="pt-6 text-center">
                             <Coins className="h-8 w-8 text-secondary mx-auto mb-2" />
-                            <div className="text-2xl font-bold">450</div>
+                            <div className="text-2xl font-bold">{totalKES}</div>
                             <div className="text-xs text-muted-foreground">KES Won</div>
                         </CardContent>
                     </Card>
@@ -164,6 +199,14 @@ const FreeSpin = () => {
                                 <Gift className="h-12 w-12 text-primary mx-auto mb-2" />
                                 <div className="text-2xl font-bold mb-2">You Won!</div>
                                 <div className="text-3xl font-bold text-primary">{result.name}</div>
+                                {result.id === 7 && (
+                                    <Button className="mt-4" variant="outline" onClick={() => {
+                                        toast({
+                                            title: "Jackpot Claimed!",
+                                            description: "Your 500 KES has been added to your balance.",
+                                        });
+                                    }}>Claim Jackpot</Button>
+                                )}
                             </div>
                         )}
 

@@ -78,13 +78,44 @@ const WhatsAppAds = () => {
         initPage();
     }, [navigate]);
 
-    const copyAdLink = (campaignId: number) => {
+    const copyAdLink = async (campaignId: number) => {
         const link = `https://spincash.com/ad/${campaignId}?ref=${profile?.referral_code}`;
         navigator.clipboard.writeText(link);
-        toast({
-            title: "Link Copied!",
-            description: "Share this link on WhatsApp to start earning",
-        });
+
+        if (profile?.id) {
+            try {
+                const rewardAmount = 5; // Small reward for sharing
+
+                const { data: currentProfile } = await supabase
+                    .from("profiles")
+                    .select("total_kes")
+                    .eq("id", profile.id)
+                    .single();
+
+                const newBalance = (currentProfile?.total_kes || 0) + rewardAmount;
+
+                await supabase.from("profiles").update({
+                    total_kes: newBalance
+                }).eq("id", profile.id);
+
+                toast({
+                    title: "Link Copied! 🔗",
+                    description: `You earned ${rewardAmount} KES for sharing this ad!`,
+                });
+
+            } catch (error) {
+                console.error("Error crediting ad share:", error);
+                toast({
+                    title: "Link Copied!",
+                    description: "Share this link on WhatsApp to start earning",
+                });
+            }
+        } else {
+            toast({
+                title: "Link Copied!",
+                description: "Share this link on WhatsApp to start earning",
+            });
+        }
     };
 
     if (loading) {

@@ -36,7 +36,9 @@ import {
   UserPlus,
   Award,
   Target,
-  Zap
+  Zap,
+  Smartphone,
+  Landmark
 } from "lucide-react";
 
 
@@ -368,12 +370,31 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    className="w-full justify-start gap-2 h-auto p-3 flex-col items-center text-center"
+                    variant="outline"
+                    onClick={() => navigate("/mpesa")}
+                  >
+                    <Smartphone className="h-6 w-6 text-green-500 mb-1" />
+                    <div className="text-xs font-medium">M-Pesa</div>
+                  </Button>
+                  <Button
+                    className="w-full justify-start gap-2 h-auto p-3 flex-col items-center text-center"
+                    variant="outline"
+                    onClick={() => navigate("/bank")}
+                  >
+                    <Landmark className="h-6 w-6 text-blue-500 mb-1" />
+                    <div className="text-xs font-medium">Bank Transfer</div>
+                  </Button>
+                </div>
+
                 <Button
                   className="w-full justify-start gap-3 h-auto p-3"
                   variant="outline"
                   onClick={() => navigate("/withdraw")}
                 >
-                  <Download className="h-5 w-5 text-green-500" />
+                  <Download className="h-5 w-5 text-orange-500" />
                   <div className="text-left">
                     <div className="font-medium">Withdraw Funds</div>
                     <div className="text-xs text-muted-foreground">Cash out your earnings</div>
@@ -500,29 +521,135 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Activity Menu */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[
-            { icon: Home, label: "Dashboard", path: "/dashboard" },
-            { icon: Dices, label: "Free Spin", path: "/spin" },
-            { icon: Video, label: "Forex Classes", path: "/forex" },
-            { icon: Calculator, label: "Math Quiz", path: "/quiz" },
-            { icon: BookOpen, label: "Blogs", path: "/blogs" },
-            { icon: Video, label: "Videos", path: "/videos" },
-            { icon: Megaphone, label: "WhatsApp Ads", path: "/ads" },
-            { icon: BarChart3, label: "Leaderboard", path: "/leaderboard" },
-          ].map((item, index) => (
-            <Card
-              key={index}
-              className="backdrop-blur-md bg-card/50 border-border/50 shadow-glass hover:scale-105 transition-all cursor-pointer group"
-              onClick={() => navigate(item.path)}
-            >
-              <CardContent className="flex flex-col items-center justify-center p-6 space-y-2">
-                <item.icon className="h-8 w-8 text-primary group-hover:text-accent transition-colors" />
-                <span className="text-sm font-medium text-center">{item.label}</span>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Enhanced Activity Menu */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold">Quick Access</h3>
+              <p className="text-muted-foreground">Navigate to your favorite sections</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: Home,
+                label: "Dashboard",
+                description: "Overview & Stats",
+                path: "/dashboard",
+                color: "from-blue-500/20 to-blue-600/20",
+                borderColor: "border-blue-500/30",
+                iconColor: "text-blue-500",
+                badge: null
+              },
+              {
+                icon: Dices,
+                label: "Free Spin",
+                description: "Win daily prizes",
+                path: "/spin",
+                color: "from-purple-500/20 to-purple-600/20",
+                borderColor: "border-purple-500/30",
+                iconColor: "text-purple-500",
+                badge: "3 spins left"
+              },
+              {
+                icon: Video,
+                label: "Forex Classes",
+                description: "Learn trading skills",
+                path: "/forex",
+                color: "from-green-500/20 to-green-600/20",
+                borderColor: "border-green-500/30",
+                iconColor: "text-green-500",
+                badge: "New"
+              },
+              {
+                icon: Calculator,
+                label: "Math Quiz",
+                description: "Test your skills",
+                path: "/quiz",
+                color: "from-yellow-500/20 to-yellow-600/20",
+                borderColor: "border-yellow-500/30",
+                iconColor: "text-yellow-500",
+                badge: "Earn points"
+              },
+              {
+                icon: BookOpen,
+                label: "Blogs",
+                description: "Read & learn",
+                path: "/blogs",
+                color: "from-pink-500/20 to-pink-600/20",
+                borderColor: "border-pink-500/30",
+                iconColor: "text-pink-500",
+                badge: null
+              },
+              {
+                icon: Video,
+                label: "Videos",
+                description: "Watch tutorials",
+                path: "/videos",
+                color: "from-red-500/20 to-red-600/20",
+                borderColor: "border-red-500/30",
+                iconColor: "text-red-500",
+                badge: "12 new"
+              },
+              {
+                icon: Megaphone,
+                label: "WhatsApp Ads",
+                description: "Promote & earn",
+                path: "/ads",
+                color: "from-orange-500/20 to-orange-600/20",
+                borderColor: "border-orange-500/30",
+                iconColor: "text-orange-500",
+                badge: "Hot 🔥"
+              },
+              {
+                icon: BarChart3,
+                label: "Leaderboard",
+                description: "Top performers",
+                path: "/leaderboard",
+                color: "from-cyan-500/20 to-cyan-600/20",
+                borderColor: "border-cyan-500/30",
+                iconColor: "text-cyan-500",
+                badge: "Rank #1"
+              },
+            ].map((item, index) => (
+              <Card
+                key={index}
+                className={`backdrop-blur-md bg-gradient-to-br ${item.color} ${item.borderColor} border-2 shadow-glass hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer group relative overflow-hidden`}
+                onClick={() => navigate(item.path)}
+              >
+                {/* Animated background gradient on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Badge */}
+                {item.badge && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge variant="secondary" className="text-xs font-bold">
+                      {item.badge}
+                    </Badge>
+                  </div>
+                )}
+
+                <CardContent className="flex flex-col items-center justify-center p-6 space-y-3 relative z-10">
+                  {/* Icon with animated background */}
+                  <div className={`relative p-4 rounded-full bg-gradient-to-br ${item.color} group-hover:scale-110 transition-transform duration-300`}>
+                    <item.icon className={`h-8 w-8 ${item.iconColor} group-hover:animate-pulse`} />
+                  </div>
+
+                  {/* Label */}
+                  <div className="text-center">
+                    <span className="text-base font-bold block mb-1">{item.label}</span>
+                    <span className="text-xs text-muted-foreground">{item.description}</span>
+                  </div>
+
+                  {/* Hover arrow indicator */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <ArrowUpRight className="h-4 w-4 text-primary" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </div>

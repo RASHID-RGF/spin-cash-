@@ -15,48 +15,75 @@ const Leaderboard = () => {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    const topEarners = [
-        { id: 1, name: "Rashid Ali Omondi", earnings: 45000, referrals: 23, rank: 1, avatar: "/RASHID.jpeg" },
-        { id: 2, name: "Sarah Johnson", earnings: 38500, referrals: 19, rank: 2, avatar: "/ali.jpeg" },
-        { id: 3, name: "Michael Chen", earnings: 32000, referrals: 15, rank: 3, avatar: null },
-        { id: 4, name: "Amina Hassan", earnings: 28000, referrals: 14, rank: 4, avatar: null },
-        { id: 5, name: "David Kimani", earnings: 25000, referrals: 12, rank: 5, avatar: null },
-        { id: 6, name: "Grace Wanjiru", earnings: 22000, referrals: 11, rank: 6, avatar: null },
-        { id: 7, name: "James Ochieng", earnings: 19000, referrals: 10, rank: 7, avatar: null },
-        { id: 8, name: "Faith Akinyi", earnings: 17500, referrals: 9, rank: 8, avatar: null },
-        { id: 9, name: "Peter Mwangi", earnings: 15000, referrals: 8, rank: 9, avatar: null },
-        { id: 10, name: "Lucy Njeri", earnings: 12500, referrals: 7, rank: 10, avatar: null },
-    ];
-
-    const topReferrers = [...topEarners].sort((a, b) => b.referrals - a.referrals);
+    const [topEarners, setTopEarners] = useState<any[]>([]);
+    const [topReferrers, setTopReferrers] = useState<any[]>([]);
 
     useEffect(() => {
-        const initPage = async () => {
+        const fetchLeaderboard = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-
                 if (!session?.user) {
                     navigate("/login");
                     return;
                 }
 
+                // Fetch current user profile
                 const { data: profileData } = await supabase
                     .from("profiles")
                     .select("*")
                     .eq("id", session.user.id)
                     .single();
-
                 setProfile(profileData);
 
-            } catch (error: any) {
-                console.error("Error loading page:", error);
+                // Fetch Top Earners
+                const { data: earners } = await supabase
+                    .from("profiles")
+                    .select("id, full_name, avatar_url, total_kes, referrals_count")
+                    .order("total_kes", { ascending: false })
+                    .limit(10);
+
+                if (earners) {
+                    const formattedEarners = earners.map((u, index) => ({
+                        id: u.id,
+                        name: u.full_name || "Anonymous",
+                        earnings: u.total_kes || 0,
+                        referrals: u.referrals_count || 0,
+                        rank: index + 1,
+                        avatar: u.avatar_url
+                    }));
+                    setTopEarners(formattedEarners);
+                }
+
+                // Fetch Top Referrers
+                const { data: referrers } = await supabase
+                    .from("profiles")
+                    .select("id, full_name, avatar_url, total_kes, referrals_count")
+                    .order("referrals_count", { ascending: false })
+                    .limit(10);
+
+                if (referrers) {
+                    const formattedReferrers = referrers.map((u, index) => ({
+                        id: u.id,
+                        name: u.full_name || "Anonymous",
+                        earnings: u.total_kes || 0,
+                        referrals: u.referrals_count || 0,
+                        rank: index + 1,
+                        avatar: u.avatar_url
+                    }));
+                    setTopReferrers(formattedReferrers);
+                }
+
+            } catch (error) {
+                console.error("Error loading leaderboard:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        initPage();
+        fetchLeaderboard();
     }, [navigate]);
+
+
 
     const getRankIcon = (rank: number) => {
         switch (rank) {
@@ -107,52 +134,54 @@ const Leaderboard = () => {
 
             <div className="container mx-auto px-4 py-8">
                 {/* Top 3 Podium */}
-                <div className="grid grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
-                    {/* 2nd Place */}
-                    <div className="flex flex-col items-center justify-end">
-                        <Card className="backdrop-blur-md bg-card/50 border-border/50 w-full text-center pb-8">
-                            <CardContent className="pt-6">
-                                <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-gray-400">
-                                    <AvatarImage src={topEarners[1].avatar} />
-                                    <AvatarFallback>{getInitials(topEarners[1].name)}</AvatarFallback>
-                                </Avatar>
-                                <Medal className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                                <div className="font-bold text-sm line-clamp-1">{topEarners[1].name}</div>
-                                <div className="text-xl font-bold text-primary">{topEarners[1].earnings.toLocaleString()} KES</div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                {topEarners.length >= 3 && (
+                    <div className="grid grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
+                        {/* 2nd Place */}
+                        <div className="flex flex-col items-center justify-end">
+                            <Card className="backdrop-blur-md bg-card/50 border-border/50 w-full text-center pb-8">
+                                <CardContent className="pt-6">
+                                    <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-gray-400">
+                                        <AvatarImage src={topEarners[1]?.avatar} />
+                                        <AvatarFallback>{getInitials(topEarners[1]?.name || "U")}</AvatarFallback>
+                                    </Avatar>
+                                    <Medal className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                                    <div className="font-bold text-sm line-clamp-1">{topEarners[1]?.name}</div>
+                                    <div className="text-xl font-bold text-primary">{topEarners[1]?.earnings.toLocaleString()} KES</div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                    {/* 1st Place */}
-                    <div className="flex flex-col items-center justify-end -mt-8">
-                        <Card className="backdrop-blur-md bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-yellow-500 w-full text-center pb-8">
-                            <CardContent className="pt-6">
-                                <Avatar className="h-24 w-24 mx-auto mb-3 border-4 border-yellow-500">
-                                    <AvatarImage src={topEarners[0].avatar} />
-                                    <AvatarFallback>{getInitials(topEarners[0].name)}</AvatarFallback>
-                                </Avatar>
-                                <Crown className="h-10 w-10 text-yellow-500 mx-auto mb-2" />
-                                <div className="font-bold line-clamp-1">{topEarners[0].name}</div>
-                                <div className="text-2xl font-bold text-primary">{topEarners[0].earnings.toLocaleString()} KES</div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                        {/* 1st Place */}
+                        <div className="flex flex-col items-center justify-end -mt-8">
+                            <Card className="backdrop-blur-md bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-yellow-500 w-full text-center pb-8">
+                                <CardContent className="pt-6">
+                                    <Avatar className="h-24 w-24 mx-auto mb-3 border-4 border-yellow-500">
+                                        <AvatarImage src={topEarners[0]?.avatar} />
+                                        <AvatarFallback>{getInitials(topEarners[0]?.name || "U")}</AvatarFallback>
+                                    </Avatar>
+                                    <Crown className="h-10 w-10 text-yellow-500 mx-auto mb-2" />
+                                    <div className="font-bold line-clamp-1">{topEarners[0]?.name}</div>
+                                    <div className="text-2xl font-bold text-primary">{topEarners[0]?.earnings.toLocaleString()} KES</div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                    {/* 3rd Place */}
-                    <div className="flex flex-col items-center justify-end">
-                        <Card className="backdrop-blur-md bg-card/50 border-border/50 w-full text-center pb-8">
-                            <CardContent className="pt-6">
-                                <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-orange-600">
-                                    <AvatarImage src={topEarners[2].avatar} />
-                                    <AvatarFallback>{getInitials(topEarners[2].name)}</AvatarFallback>
-                                </Avatar>
-                                <Award className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                                <div className="font-bold text-sm line-clamp-1">{topEarners[2].name}</div>
-                                <div className="text-xl font-bold text-primary">{topEarners[2].earnings.toLocaleString()} KES</div>
-                            </CardContent>
-                        </Card>
+                        {/* 3rd Place */}
+                        <div className="flex flex-col items-center justify-end">
+                            <Card className="backdrop-blur-md bg-card/50 border-border/50 w-full text-center pb-8">
+                                <CardContent className="pt-6">
+                                    <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-orange-600">
+                                        <AvatarImage src={topEarners[2]?.avatar} />
+                                        <AvatarFallback>{getInitials(topEarners[2]?.name || "U")}</AvatarFallback>
+                                    </Avatar>
+                                    <Award className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                                    <div className="font-bold text-sm line-clamp-1">{topEarners[2]?.name}</div>
+                                    <div className="text-xl font-bold text-primary">{topEarners[2]?.earnings.toLocaleString()} KES</div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Tabs for different leaderboards */}
                 <Tabs defaultValue="earnings" className="max-w-4xl mx-auto">
