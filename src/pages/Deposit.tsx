@@ -14,6 +14,7 @@ const Deposit = () => {
     const { toast } = useToast();
     const [amount, setAmount] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("mpesa");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1); // 1: form, 2: processing, 3: success
 
@@ -24,6 +25,15 @@ const Deposit = () => {
             toast({
                 title: "Invalid Amount",
                 description: "Please enter a valid amount greater than 0",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (paymentMethod === "mpesa" && !phoneNumber) {
+            toast({
+                title: "Phone Number Required",
+                description: "Please enter your M-Pesa phone number",
                 variant: "destructive",
             });
             return;
@@ -40,29 +50,50 @@ const Deposit = () => {
                 throw new Error('Not authenticated');
             }
 
-            // Call the backend API
-            const response = await fetch('http://localhost:3001/api/wallet/add-funds', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
-                    amount: parseFloat(amount),
-                    paymentMethod: paymentMethod
-                }),
-            });
+            let response;
+            let successMessage;
+
+            if (paymentMethod === "mpesa") {
+                // Call the M-Pesa deposit API
+                response = await fetch('http://localhost:3001/api/mpesa/deposit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phoneNumber,
+                        amount: parseFloat(amount),
+                        userId: session.user.id
+                    }),
+                });
+                successMessage = "M-Pesa STK Push sent. Please check your phone and enter your PIN to complete the transaction.";
+            } else {
+                // Call the general wallet add-funds API for other payment methods
+                response = await fetch('http://localhost:3001/api/wallet/add-funds', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        paymentMethod: paymentMethod
+                    }),
+                });
+                successMessage = `KES ${amount} has been added to your wallet`;
+            }
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Deposit failed');
+                throw new Error(errorData.message || errorData.error || 'Deposit failed');
             }
 
             const data = await response.json();
 
             toast({
-                title: "Deposit Successful!",
-                description: `KES ${amount} has been added to your wallet`,
+                title: paymentMethod === "mpesa" ? "M-Pesa STK Push Sent" : "Deposit Successful!",
+                description: successMessage,
             });
 
             setStep(3);
@@ -228,6 +259,19 @@ const Deposit = () => {
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-6">
+                                    {paymentMethod === "mpesa" && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">M-Pesa Phone Number</label>
+                                            <Input
+                                                type="tel"
+                                                placeholder="e.g. 0712345678"
+                                                value={phoneNumber}
+                                                onChange={(e) => setPhoneNumber(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Amount (KES)</label>
                                         <Input

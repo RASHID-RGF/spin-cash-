@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ const FreeSpin = () => {
     const [loading, setLoading] = useState(true);
     const [spinning, setSpinning] = useState(false);
     const [result, setResult] = useState<any>(null);
-    const [spinsLeft, setSpinsLeft] = useState(3);
+    const [spinsLeft, setSpinsLeft] = useState(5);
     const [totalWins, setTotalWins] = useState(0);
     const [totalKES, setTotalKES] = useState(0);
 
@@ -32,20 +32,15 @@ const FreeSpin = () => {
     useEffect(() => {
         const initPage = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const session = await auth.getSession();
 
                 if (!session?.user) {
                     navigate("/login");
                     return;
                 }
 
-                const { data: profileData } = await supabase
-                    .from("profiles")
-                    .select("*")
-                    .eq("id", session.user.id)
-                    .single();
-
-                setProfile(profileData);
+                const profileData = await auth.getProfile();
+                setProfile(profileData.user);
 
             } catch (error: any) {
                 console.error("Error loading page:", error);
@@ -56,6 +51,7 @@ const FreeSpin = () => {
 
         initPage();
     }, [navigate]);
+
 
     const handleSpin = async () => {
         if (spinsLeft <= 0) {
@@ -195,17 +191,18 @@ const FreeSpin = () => {
                         </div>
 
                         {result && !spinning && (
-                            <div className="text-center mb-6 p-6 bg-primary/10 rounded-lg">
+                            <div className="text-center mb-6 p-6 bg-primary/10 rounded-lg border-2 border-primary/20">
                                 <Gift className="h-12 w-12 text-primary mx-auto mb-2" />
-                                <div className="text-2xl font-bold mb-2">You Won!</div>
-                                <div className="text-3xl font-bold text-primary">{result.name}</div>
-                                {result.id === 7 && (
-                                    <Button className="mt-4" variant="outline" onClick={() => {
-                                        toast({
-                                            title: "Jackpot Claimed!",
-                                            description: "Your 500 KES has been added to your balance.",
-                                        });
-                                    }}>Claim Jackpot</Button>
+                                <div className="text-2xl font-bold mb-2">
+                                    {result.value > 0 ? "You Won!" : "Try Again!"}
+                                </div>
+                                <div className={`text-3xl font-bold ${result.value > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                    {result.name}
+                                </div>
+                                {result.value > 0 && (
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Added to your wallet balance
+                                    </p>
                                 )}
                             </div>
                         )}
@@ -230,7 +227,7 @@ const FreeSpin = () => {
                         </Button>
 
                         <div className="mt-6 text-center text-sm text-muted-foreground">
-                            <p>You get 3 free spins daily!</p>
+                            <p>You get 5 free spins daily!</p>
                             <p>Come back tomorrow for more chances to win</p>
                         </div>
                     </CardContent>
